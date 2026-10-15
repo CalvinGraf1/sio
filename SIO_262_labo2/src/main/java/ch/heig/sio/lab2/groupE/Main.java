@@ -34,7 +34,10 @@ public final class Main {
       System.out.println(file.getFileName() + " " + graph);
 
       long start = System.nanoTime();
-      Coloring coloring = algorithm.color(graph);
+      DSATUR dsatur = new DSATUR();
+      Coloring coloring = dsatur.solve(graph);
+
+      //Coloring coloring = algorithm.color(graph);
       long micros = (System.nanoTime() - start) / 1_000;
 
       System.out.printf("  %-16s %5d couleurs  %8d µs  %s%n",
