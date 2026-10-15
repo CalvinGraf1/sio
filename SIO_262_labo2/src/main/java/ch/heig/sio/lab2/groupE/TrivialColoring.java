@@ -1,4 +1,4 @@
-package ch.heig.sio.lab2.groupX;
+package ch.heig.sio.lab2.groupE;
 
 import ch.heig.sio.lab2.coloring.Coloring;
 import ch.heig.sio.lab2.coloring.ColoringAlgorithm;
