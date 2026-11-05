@@ -1,9 +1,10 @@
 package ch.heig.sio.lab2.groupE;
 
 import ch.heig.sio.lab2.coloring.Coloring;
+import ch.heig.sio.lab2.coloring.ColoringAlgorithm;
 import ch.heig.sio.lab2.graph.Graph;
 
-public class DSATUR {
+public class DSATUR implements ColoringAlgorithm {
 
     private Graph graph;
 
@@ -12,7 +13,8 @@ public class DSATUR {
      * @param graph le graphe à colorier
      * @return le tableau de couleurs des sommets
      */
-    public Coloring solve(Graph graph) {
+    @Override
+    public Coloring color(Graph graph) {
 
         this.graph = graph;
         int nbVertices = graph.vertexCount();
@@ -26,21 +28,15 @@ public class DSATUR {
 
         int nbColored = 0;
         int maxDegreeVertex;
-        int uncoloredVertex = Integer.MAX_VALUE;
-        int colorTested = 0;
+        int uncoloredVertex;
+        int colorTested;
 
 
         for (int v = 0; v < nbVertices; v++) {
             colors[v] = -1;
-            saturation[v] = 0;
 
             // définit le degré du sommet
             degrees[v] = graph.degree(v);
-
-            // initialisation du tableau des couleurs des voisins
-            for (int c = 0; c < nbVertices; c++) {
-                neighboursColoring[v][c] = 0;
-            }
         }
 
         // par défaut le meilleur sommet est le sommet 0
@@ -112,7 +108,8 @@ public class DSATUR {
         int[] vertexNeighbours = graph.neighbors(vertex);
 
         // pour chaque voisin du sommet colorié
-        for(int v=0; v  < vertexNeighbours.length; v++){
+        for (int i = 0; i < graph.degree(vertex); i++) {
+            int v = graph.neighbor(vertex, i);
 
             // si ce voisin n'est pas colorié et que la couleur du sommet colorié n'est pas déjà présente chez ce voisin
             if(colors[vertexNeighbours[v]] == -1 && neighboursColoring[vertexNeighbours[v]][color] == 0){
@@ -121,6 +118,4 @@ public class DSATUR {
            }
         }
     }
-
-
 }
