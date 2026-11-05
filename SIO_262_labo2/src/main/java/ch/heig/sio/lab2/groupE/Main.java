@@ -1,7 +1,6 @@
 package ch.heig.sio.lab2.groupE;
 
 import ch.heig.sio.lab2.coloring.Coloring;
-import ch.heig.sio.lab2.coloring.ColoringAlgorithm;
 import ch.heig.sio.lab2.graph.Graph;
 import ch.heig.sio.lab2.graph.GraphReader;
 
@@ -9,19 +8,27 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 public final class Main {
 
+  // Exécutions d'échauffement de la JVM, non comptabilisées.
+  private static final int WARMUP = 5;
+  // Exécutions mesurées, on reporte la moyenne.
+  private static final int REPS = 20;
+
   public static void main(String[] args) throws IOException {
     Path dataDir = Path.of(args.length > 0 ? args[0] : "data");
-
-    ColoringAlgorithm algorithm = new TrivialColoring();
 
     List<Path> files;
     try (Stream<Path> stream = Files.list(dataDir)) {
       files = stream.filter(p -> p.toString().endsWith(".txt")).sorted().toList();
     }
+
+    System.out.printf("Échauffement : %d, répétitions : %d%n", WARMUP, REPS);
+    System.out.printf("%-12s %6s %9s %6s %6s | %6s %6s %7s | %10s %10s %8s%n",
+        "Instance", "n", "m", "Δ", "D", "LF", "DSATUR", "gain", "LF [ms]", "DS [ms]", "augm.");
 
     for (Path file : files) {
       Graph graph;
@@ -31,18 +38,46 @@ public final class Main {
         System.err.println(file.getFileName() + " : " + e.getMessage());
         continue;
       }
-      System.out.println(file.getFileName() + " " + graph);
 
-      long start = System.nanoTime();
+      String name = file.getFileName().toString().replaceFirst("\\.txt$", "");
+      int n = graph.vertexCount();
+      int m = graph.edgeCount();
+
+      // en double : n(n-1) dépasse Integer.MAX_VALUE pour les VLSI
+      double density = n < 2 ? 0 : 2.0 * m / ((double) n * (n - 1));
+
+      LF lf = new LF();
       DSATUR dsatur = new DSATUR();
-      Coloring coloring = dsatur.solve(graph);
+      Result resultLF = measure(graph, lf::color);
+      Result resultDSATUR = measure(graph, dsatur::color);
 
-      //Coloring coloring = algorithm.color(graph);
-      long micros = (System.nanoTime() - start) / 1_000;
+      int colorsLF = resultLF.coloring().colorCount();
+      int colorsDSATUR = resultDSATUR.coloring().colorCount();
+      double colorGain = 100.0 * (colorsLF - colorsDSATUR) / colorsLF;
+      double timeIncrease = 100.0 * (resultDSATUR.meanMs() - resultLF.meanMs()) / resultLF.meanMs();
 
-      System.out.printf("  %-16s %5d couleurs  %8d µs  %s%n",
-          algorithm.name(), coloring.colorCount(), micros,
-          coloring.isProperFor(graph) ? "OK" : "INVALIDE");
+      System.out.printf("%-12s %6d %9d %6d %6.3f | %6d %6d %6.2f%% | %10.3f %10.3f %7.0f%%%n",
+          name, n, m, graph.maxDegree(), density,
+          colorsLF, colorsDSATUR, colorGain,
+          resultLF.meanMs(), resultDSATUR.meanMs(), timeIncrease);
     }
+  }
+
+  // Coloration obtenue et temps moyen d'un appel en millisecondes.
+  private record Result(Coloring coloring, double meanMs) {}
+
+  // Mesure uniquement l'appel à l'algorithme
+  private static Result measure(Graph graph, Function<Graph, Coloring> algorithm) {
+    Coloring coloring = null;
+    for (int i = 0; i < WARMUP; i++) {
+      coloring = algorithm.apply(graph);
+    }
+    long total = 0;
+    for (int i = 0; i < REPS; i++) {
+      long start = System.nanoTime();
+      coloring = algorithm.apply(graph);
+      total += System.nanoTime() - start;
+    }
+    return new Result(coloring, total / 1e6 / REPS);
   }
 }
