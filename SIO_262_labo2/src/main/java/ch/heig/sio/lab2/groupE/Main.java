@@ -27,8 +27,8 @@ public final class Main {
     }
 
     System.out.printf("Échauffement : %d, répétitions : %d%n", WARMUP, REPS);
-    System.out.printf("%-12s %6s %9s %6s %6s | %6s %6s %7s | %10s %10s %8s%n",
-        "Instance", "n", "m", "Δ", "D", "LF", "DSATUR", "gain", "LF [ms]", "DS [ms]", "augm.");
+    System.out.printf("%-12s %6s %9s %6s %6s | %6s %6s %7s | %10s %10s %8s | %s%n",
+            "Instance", "n", "m", "Δ", "D", "LF", "DSATUR", "gain", "LF [ms]", "DS [ms]", "augm.", "Valide");
 
     for (Path file : files) {
       Graph graph;
@@ -43,7 +43,6 @@ public final class Main {
       int n = graph.vertexCount();
       int m = graph.edgeCount();
 
-      // en double : n(n-1) dépasse Integer.MAX_VALUE pour les VLSI
       double density = n < 2 ? 0 : 2.0 * m / ((double) n * (n - 1));
 
       LF lf = new LF();
@@ -55,11 +54,13 @@ public final class Main {
       int colorsDSATUR = resultDSATUR.coloring().colorCount();
       double colorGain = 100.0 * (colorsLF - colorsDSATUR) / colorsLF;
       double timeIncrease = 100.0 * (resultDSATUR.meanMs() - resultLF.meanMs()) / resultLF.meanMs();
+      boolean valid = resultLF.coloring().isProperFor(graph) && resultDSATUR.coloring().isProperFor(graph);
 
-      System.out.printf("%-12s %6d %9d %6d %6.3f | %6d %6d %6.2f%% | %10.3f %10.3f %7.0f%%%n",
-          name, n, m, graph.maxDegree(), density,
-          colorsLF, colorsDSATUR, colorGain,
-          resultLF.meanMs(), resultDSATUR.meanMs(), timeIncrease);
+      System.out.printf("%-12s %6d %9d %6d %6.3f | %6d %6d %6.2f%% | %10.3f %10.3f %7.0f%% | %s%n",
+              name, n, m, graph.maxDegree(), density,
+              colorsLF, colorsDSATUR, colorGain,
+              resultLF.meanMs(), resultDSATUR.meanMs(), timeIncrease,
+              valid ? "OK" : "INVALIDE");
     }
   }
 
@@ -78,6 +79,11 @@ public final class Main {
       coloring = algorithm.apply(graph);
       total += System.nanoTime() - start;
     }
+
+    if (!coloring.isProperFor(graph)) {
+      throw new IllegalStateException("Coloration invalide");
+    }
+
     return new Result(coloring, total / 1e6 / REPS);
   }
 }

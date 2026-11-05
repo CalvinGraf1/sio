@@ -104,18 +104,14 @@ public class DSATUR implements ColoringAlgorithm {
      */
     private void updateSaturation(int vertex, int color, int[] colors, int[][] neighboursColoring, int[] saturation){
 
-        // récupère les voisins du sommet
-        int[] vertexNeighbours = graph.neighbors(vertex);
-
         // pour chaque voisin du sommet colorié
         for (int i = 0; i < graph.degree(vertex); i++) {
             int v = graph.neighbor(vertex, i);
 
             // si ce voisin n'est pas colorié et que la couleur du sommet colorié n'est pas déjà présente chez ce voisin
-            if(colors[vertexNeighbours[v]] == -1 && neighboursColoring[vertexNeighbours[v]][color] == 0){
-                saturation[vertexNeighbours[v]]++;
-                neighboursColoring[vertexNeighbours[v]][color] = 1;
-           }
+            if (colors[v] == -1 && neighboursColoring[v][color] == 0) {
+                saturation[v]++;
+                neighboursColoring[v][color] = 1;
+            }
         }
-    }
-}
+    }}
